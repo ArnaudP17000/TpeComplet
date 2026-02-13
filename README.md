@@ -2,9 +2,11 @@
 
 ## 📋 Description
 
-Module Python professionnel pour la gestion complète des Terminaux de Paiement Électronique avec toutes les fonctionnalités demandées.
+Application de bureau Python (Tkinter) pour la gestion complète des Terminaux de Paiement Électronique.
 
-## 🚀 Installation
+**Note importante:** Cette application est une application de bureau native qui s'exécute directement sur votre machine. Elle ne nécessite pas Docker ni de serveur web.
+
+## 🚀 Installation et Démarrage
 
 ### 1. Prérequis
 - Python 3.7 ou supérieur
@@ -15,6 +17,14 @@ Module Python professionnel pour la gestion complète des Terminaux de Paiement 
 ```bash
 pip install -r requirements.txt
 ```
+
+### 3. Lancement de l'application
+
+```bash
+python tpe_gui.py
+```
+
+L'application s'ouvrira dans une fenêtre de bureau avec une interface graphique complète.
 
 ## 📊 Fonctionnalités
 
