@@ -1,0 +1,16 @@
+{
+    "users": {
+        "admin": {
+            "username": "admin",
+            "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+            "role": "admin",
+            "nom": "Administrateur",
+            "prenom": "Système",
+            "email": "admin@tpe.local",
+            "date_creation": "2026-02-13 18:45:26",
+            "derniere_connexion": "2026-02-13 20:41:02",
+            "actif": true
+        }
+    },
+    "date_sauvegarde": "2026-02-13 20:41:02"
+}
