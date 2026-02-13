@@ -20,11 +20,21 @@ pip install -r requirements.txt
 
 ### 3. Lancement de l'application
 
+**Option 1 : Via le script de lancement (recommandé)**
+```bash
+python run.py
+```
+
+**Option 2 : Directement**
 ```bash
 python tpe_gui.py
 ```
 
 L'application s'ouvrira dans une fenêtre de bureau avec une interface graphique complète.
+
+**Note:** Sur Linux, si Tkinter n'est pas installé:
+- Ubuntu/Debian: `sudo apt-get install python3-tk`
+- Fedora: `sudo dnf install python3-tkinter`
 
 ## 📊 Fonctionnalités
 
@@ -175,6 +185,21 @@ gestionnaire.sauvegarder()
 ├── tpe_backup.json        # Sauvegarde JSON (généré)
 └── tpe_export.xlsx        # Export Excel (généré)
 ```
+
+## 🖥️ Architecture et Déploiement
+
+### Type d'Application
+- **Application de bureau native** utilisant Python et Tkinter
+- **Pas de serveur web** - l'application s'exécute localement sur votre machine
+- **Pas de Docker nécessaire** - installation Python standard
+- **Interface graphique** - Fenêtres natives du système d'exploitation
+
+### Avantages de l'architecture de bureau
+- ✅ Installation simple et directe
+- ✅ Pas de configuration serveur
+- ✅ Pas de dépendances Docker
+- ✅ Données stockées localement
+- ✅ Fonctionne hors ligne
 
 ## 🎯 Points forts du module
 
