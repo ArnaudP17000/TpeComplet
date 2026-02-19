@@ -1,0 +1,8 @@
+__pycache__/
+*.pkl
+*.pyc
+tpe_backup.json
+tpe_export.xlsx
+mes_tpe.xlsx
+test.txt
+users.json

@@ -18,8 +18,9 @@ class LoginWindow:
         self.auth_manager = AuthManager()
         
         self.root.title("TPE Manager - Connexion")
-        self.root.geometry("450x350")
+        self.root.geometry("480x400")
         self.root.resizable(False, False)
+        self.root.configure(bg='#F0F4F8')
         
         # Centrer la fenêtre
         self.centrer_fenetre()
@@ -39,6 +40,15 @@ class LoginWindow:
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
         self.root.geometry(f'{width}x{height}+{x}+{y}')
     
+    def toggle_password_visibility(self):
+        """Affiche ou masque le mot de passe"""
+        if self.password_visible:
+            self.password_entry.config(show="●")
+            self.password_visible = False
+        else:
+            self.password_entry.config(show="")
+            self.password_visible = True
+    
     def creer_interface(self):
         """Crée l'interface de connexion"""
         # Style
@@ -46,62 +56,84 @@ class LoginWindow:
         style.theme_use('clam')
         
         # Frame principal
-        main_frame = ttk.Frame(self.root, padding="30")
+        main_frame = tk.Frame(self.root, padding=30, bg='#F0F4F8')
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         # Titre
-        titre_label = ttk.Label(
+        titre_label = tk.Label(
             main_frame,
             text="🏦 TPE Manager",
             font=('Arial', 20, 'bold'),
-            foreground='#0066CC'
+            foreground='#0066CC',
+            bg='#F0F4F8'
         )
         titre_label.pack(pady=(0, 10))
         
-        sous_titre_label = ttk.Label(
+        sous_titre_label = tk.Label(
             main_frame,
             text="Gestion des Terminaux de Paiement",
-            font=('Arial', 10)
+            font=('Arial', 10),
+            bg='#F0F4F8'
         )
-        sous_titre_label.pack(pady=(0, 30))
+        sous_titre_label.pack(pady=(0, 15))
+        
+        # Séparateur
+        ttk.Separator(main_frame, orient='horizontal').pack(fill=tk.X, pady=(0, 20))
         
         # Frame du formulaire
-        form_frame = ttk.Frame(main_frame)
+        form_frame = tk.Frame(main_frame, bg='#F0F4F8')
         form_frame.pack(fill=tk.BOTH, expand=True)
         
         # Nom d'utilisateur
-        ttk.Label(form_frame, text="Nom d'utilisateur:", font=('Arial', 10)).pack(anchor=tk.W, pady=(0, 5))
+        tk.Label(form_frame, text="Nom d'utilisateur:", font=('Arial', 10), bg='#F0F4F8').pack(anchor=tk.W, pady=(0, 5))
         self.username_var = tk.StringVar()
         self.username_entry = ttk.Entry(form_frame, textvariable=self.username_var, font=('Arial', 11))
         self.username_entry.pack(fill=tk.X, pady=(0, 15))
         self.username_entry.focus()
         
         # Mot de passe
-        ttk.Label(form_frame, text="Mot de passe:", font=('Arial', 10)).pack(anchor=tk.W, pady=(0, 5))
-        self.password_var = tk.StringVar()
-        self.password_entry = ttk.Entry(form_frame, textvariable=self.password_var, show="●", font=('Arial', 11))
-        self.password_entry.pack(fill=tk.X, pady=(0, 25))
+        tk.Label(form_frame, text="Mot de passe:", font=('Arial', 10), bg='#F0F4F8').pack(anchor=tk.W, pady=(0, 5))
         
-        # Bouton de connexion
-        self.btn_connexion = ttk.Button(
+        # Frame pour le mot de passe avec bouton de visibilité
+        password_frame = tk.Frame(form_frame, bg='#F0F4F8')
+        password_frame.pack(fill=tk.X, pady=(0, 25))
+        
+        self.password_var = tk.StringVar()
+        self.password_entry = ttk.Entry(password_frame, textvariable=self.password_var, show="●", font=('Arial', 11))
+        self.password_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Bouton pour afficher/masquer le mot de passe
+        self.password_visible = False
+        self.btn_toggle_password = tk.Button(
+            password_frame,
+            text="👁",
+            command=self.toggle_password_visibility,
+            font=('Arial', 10),
+            width=3,
+            relief=tk.FLAT,
+            bg='#F0F4F8',
+            cursor='hand2'
+        )
+        self.btn_toggle_password.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Bouton de connexion (utilise tk.Button pour coloration)
+        self.btn_connexion = tk.Button(
             form_frame,
             text="🔓 Se connecter",
             command=self.connexion,
-            style='Accent.TButton'
+            font=('Arial', 11, 'bold'),
+            bg='#0066CC',
+            fg='white',
+            activebackground='#0052A3',
+            activeforeground='white',
+            relief=tk.FLAT,
+            cursor='hand2',
+            pady=10
         )
-        self.btn_connexion.pack(fill=tk.X, ipady=8)
+        self.btn_connexion.pack(fill=tk.X)
         
-        # Info compte par défaut
-        info_label = ttk.Label(
-            main_frame,
-            text="Compte par défaut: admin / admin123",
-            font=('Arial', 8),
-            foreground='gray'
-        )
-        info_label.pack(side=tk.BOTTOM, pady=(20, 0))
-        
-        # Style du bouton
-        style.configure('Accent.TButton', font=('Arial', 11, 'bold'))
+        # Label de version discret
+        tk.Label(main_frame, text="TPE Manager v1.5", font=('Arial', 7), foreground='#AAAAAA', bg='#F0F4F8').pack(side=tk.BOTTOM, pady=(10, 0))
     
     def connexion(self):
         """Tente la connexion"""
