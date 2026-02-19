@@ -23,6 +23,18 @@ class TPEInterface:
         "Ingenico Move 5000"
     ]
     
+    # Palette de couleurs centralisée
+    COULEURS = {
+        "primaire": "#0066CC",
+        "admin_badge": "#28a745",
+        "user_badge": "#007bff",
+        "danger": "#dc3545",
+        "fond": "#F5F7FA",
+        "texte_principal": "#2C3E50",
+        "texte_secondaire": "#7F8C8D",
+        "succes": "#27AE60",
+    }
+    
     def __init__(self, root, auth_manager):
         self.root = root
         self.auth_manager = auth_manager
@@ -88,11 +100,33 @@ class TPEInterface:
         style = ttk.Style()
         style.theme_use('clam')
         
-        # Couleurs
-        style.configure('Titre.TLabel', font=('Arial', 16, 'bold'), foreground='#0066CC')
-        style.configure('SousTitre.TLabel', font=('Arial', 11, 'bold'))
-        style.configure('Bouton.TButton', font=('Arial', 10))
-        style.configure('Treeview', rowheight=25)
+        # Fond général
+        self.root.configure(bg=self.COULEURS["fond"])
+        
+        # Styles personnalisés
+        style.configure('Titre.TLabel', 
+            font=('Segoe UI', 16, 'bold'), 
+            foreground=self.COULEURS["primaire"],
+            background=self.COULEURS["fond"]
+        )
+        style.configure('SousTitre.TLabel', 
+            font=('Segoe UI', 10, 'bold'),
+            foreground=self.COULEURS["texte_principal"]
+        )
+        style.configure('Bouton.TButton', 
+            font=('Segoe UI', 10),
+            padding=(8, 4)
+        )
+        style.configure('Treeview', 
+            rowheight=28,
+            font=('Segoe UI', 9)
+        )
+        style.configure('Treeview.Heading', 
+            font=('Segoe UI', 9, 'bold'),
+            foreground=self.COULEURS["primaire"]
+        )
+        # Alternance de couleurs dans la liste
+        style.map('Treeview', background=[('selected', self.COULEURS["primaire"])])
     
     def creer_interface(self):
         """Crée l'interface principale"""
@@ -155,6 +189,9 @@ class TPEInterface:
         
         self.creer_formulaire(right_frame)
         
+        # Frame du bas : Barre de statut
+        self.creer_barre_statut()
+        
         # Frame du bas : Boutons d'action
         bottom_frame = ttk.Frame(self.root, padding="10")
         bottom_frame.pack(fill=tk.X, side=tk.BOTTOM)
@@ -192,27 +229,34 @@ class TPEInterface:
         
         # Menu Aide
         menu_aide = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="?", menu=menu_aide)
+        menubar.add_cascade(label="Aide", menu=menu_aide)
         menu_aide.add_command(label="📈 Statistiques TPE", command=self.afficher_statistiques)
         menu_aide.add_command(label="ℹ️ À propos", command=self.a_propos)
     
     def creer_liste_tpe(self, parent):
         """Crée la liste des TPE avec filtre par type"""
-        # Frame pour le filtre
+        # Frame pour filtres
         search_frame = ttk.Frame(parent)
-        search_frame.pack(fill=tk.X, pady=(0, 10))
+        search_frame.pack(fill=tk.X, pady=(0, 5))
         
-        ttk.Label(search_frame, text="🔍 Type de TPE:").pack(side=tk.LEFT, padx=(0, 5))
+        # Filtre par type
+        ttk.Label(search_frame, text="🔍 Type:").pack(side=tk.LEFT, padx=(0, 3))
         self.filtre_var = tk.StringVar(value="Tous")
         filtre_combo = ttk.Combobox(
-            search_frame, 
-            textvariable=self.filtre_var,
-            values=["Tous", "Move", "Desk"],
-            state='readonly',
-            width=15
+            search_frame, textvariable=self.filtre_var,
+            values=["Tous", "Move", "Desk"], state='readonly', width=10
         )
-        filtre_combo.pack(side=tk.LEFT)
+        filtre_combo.pack(side=tk.LEFT, padx=(0, 10))
         filtre_combo.bind('<<ComboboxSelected>>', self.filtrer_tpe_liste)
+        
+        # Recherche textuelle
+        ttk.Label(search_frame, text="Recherche:").pack(side=tk.LEFT, padx=(0, 3))
+        self.search_var = tk.StringVar()
+        self.search_var.trace('w', self.filtrer_tpe_liste)
+        ttk.Entry(search_frame, textvariable=self.search_var, width=20).pack(side=tk.LEFT)
+        
+        # Bouton réinitialiser
+        ttk.Button(search_frame, text="✖", width=3, command=self.reinitialiser_filtres).pack(side=tk.LEFT, padx=(5, 0))
         
         # Treeview pour afficher les TPE
         tree_frame = ttk.Frame(parent)
@@ -254,20 +298,50 @@ class TPEInterface:
         self.stats_label = ttk.Label(parent, text="", font=('Arial', 9))
         self.stats_label.pack(pady=(10, 0))
     
+    def _get_cartes_str(self, tpe):
+        """Retourne une représentation courte des cartes commerçant"""
+        if not hasattr(tpe, 'cartes_commercant') or not tpe.cartes_commercant:
+            return ""
+        if isinstance(tpe.cartes_commercant[0], CarteCommercant):
+            cartes_str = ", ".join([c.numero for c in tpe.cartes_commercant[:2]])
+        else:
+            cartes_str = ", ".join([str(c) for c in tpe.cartes_commercant[:2]])
+        if len(tpe.cartes_commercant) > 2:
+            cartes_str += "..."
+        return cartes_str
+    
+    def reinitialiser_filtres(self):
+        """Réinitialise tous les filtres"""
+        self.search_var.set('')
+        self.filtre_var.set('Tous')
+        self.rafraichir_liste()
+    
     def filtrer_tpe_liste(self, *args):
-        """Filtre la liste par type de TPE (Move/Desk)"""
+        """Filtre la liste par type de TPE (Move/Desk) et recherche textuelle multi-champs"""
         filtre = self.filtre_var.get()
+        recherche = self.search_var.get().strip().lower() if hasattr(self, 'search_var') else ''
         
         for item in self.tree.get_children():
             self.tree.delete(item)
         
         for tpe in self.gestionnaire.lister_tpes():
-            # Filtrer par type
             modele = tpe.modele_tpe
+            # Filtre par type
             if filtre != "Tous":
                 if filtre == "Move" and "Move" not in modele:
                     continue
                 if filtre == "Desk" and "Desk" not in modele:
+                    continue
+            
+            # Filtre textuel multi-champs
+            if recherche:
+                champs_recherche = [
+                    str(tpe.shop_id),
+                    tpe.service.lower(),
+                    f"{tpe.regisseur.prenom} {tpe.regisseur.nom}".lower(),
+                    tpe.modele_tpe.lower()
+                ]
+                if not any(recherche in champ for champ in champs_recherche):
                     continue
             
             type_connexion = []
@@ -277,29 +351,13 @@ class TPEInterface:
                 type_connexion.append("4/5G")
             
             nombre_tpe = getattr(tpe, 'nombre_tpe', 1)
-            
-            # Récupérer les cartes (avec compatibilité)
-            cartes_str = ""
-            if hasattr(tpe, 'cartes_commercant') and tpe.cartes_commercant:
-                if isinstance(tpe.cartes_commercant[0], CarteCommercant):
-                    # Nouvelle version
-                    cartes_str = ", ".join([c.numero for c in tpe.cartes_commercant[:2]])
-                    if len(tpe.cartes_commercant) > 2:
-                        cartes_str += "..."
-                else:
-                    # Ancienne version (strings)
-                    cartes_str = ", ".join([str(c) for c in tpe.cartes_commercant[:2]])
-                    if len(tpe.cartes_commercant) > 2:
-                        cartes_str += "..."
+            cartes_str = self._get_cartes_str(tpe)
             
             self.tree.insert('', tk.END, values=(
-                tpe.shop_id,
-                tpe.service,
+                tpe.shop_id, tpe.service,
                 f"{tpe.regisseur.prenom} {tpe.regisseur.nom}",
-                tpe.modele_tpe,
-                nombre_tpe,
-                " + ".join(type_connexion),
-                cartes_str
+                tpe.modele_tpe, nombre_tpe,
+                " + ".join(type_connexion), cartes_str
             ))
     
     def creer_formulaire(self, parent):
@@ -547,6 +605,26 @@ class TPEInterface:
         ttk.Button(parent, text="📂 Restaurer", command=self.restaurer, width=20).pack(side=tk.LEFT, padx=5)
         ttk.Button(parent, text="📈 Statistiques", command=self.afficher_statistiques, width=20).pack(side=tk.LEFT, padx=5)
     
+    def creer_barre_statut(self):
+        """Crée une barre de statut en bas de la fenêtre"""
+        self.status_frame = tk.Frame(self.root, bg="#2C3E50", height=25)
+        self.status_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        self.status_var = tk.StringVar(value="✅ Application prête")
+        self.status_label = tk.Label(
+            self.status_frame,
+            textvariable=self.status_var,
+            bg="#2C3E50", fg="white",
+            font=('Segoe UI', 8),
+            anchor=tk.W, padx=10
+        )
+        self.status_label.pack(fill=tk.X)
+
+    def set_status(self, message, duree=5000):
+        """Met à jour le message de statut"""
+        self.status_var.set(message)
+        if duree > 0:
+            self.root.after(duree, lambda: self.status_var.set("✅ Application prête"))
+    
     def toggle_backoffice(self):
         """Active/désactive le champ email backoffice"""
         if self.form_vars['backoffice_actif'].get():
@@ -711,11 +789,13 @@ class TPEInterface:
             if self.gestionnaire.ajouter_tpe(tpe):
                 cartes_info = ", ".join([f"{c.numero} (SN: {c.numero_serie_tpe or 'N/A'})" for c in tpe.cartes_commercant])
                 messagebox.showinfo("Succès", f"TPE ajouté avec succès !\nShopID: {tpe.shop_id}\nNombre de TPE: {tpe.nombre_tpe}\nCartes: {cartes_info}")
+                self.set_status(f"✅ TPE ShopID {tpe.shop_id} ajouté avec succès")
                 self.rafraichir_liste()
                 self.vider_formulaire()
                 self.sauvegarder_auto()
             
         except Exception as e:
+            self.set_status(f"❌ Erreur lors de l'ajout du TPE", duree=7000)
             messagebox.showerror("Erreur", f"Erreur lors de l'ajout du TPE:\n{str(e)}")
     
     def modifier_tpe(self):
@@ -778,11 +858,13 @@ class TPEInterface:
             
             if self.gestionnaire.modifier_tpe(self.tpe_selectionne_id, tpe):
                 messagebox.showinfo("Succès", "TPE modifié avec succès !")
+                self.set_status(f"✅ TPE ShopID {self.tpe_selectionne_id} modifié avec succès")
                 self.rafraichir_liste()
                 self.vider_formulaire()
                 self.sauvegarder_auto()
             
         except Exception as e:
+            self.set_status(f"❌ Erreur lors de la modification du TPE", duree=7000)
             messagebox.showerror("Erreur", f"Erreur lors de la modification du TPE:\n{str(e)}")
     
     def supprimer_tpe(self):
@@ -799,6 +881,7 @@ class TPEInterface:
         if reponse:
             if self.gestionnaire.supprimer_tpe(self.tpe_selectionne_id):
                 messagebox.showinfo("Succès", "TPE supprimé avec succès !")
+                self.set_status(f"✅ TPE ShopID {self.tpe_selectionne_id} supprimé avec succès")
                 self.rafraichir_liste()
                 self.vider_formulaire()
                 self.sauvegarder_auto()
@@ -906,20 +989,7 @@ class TPEInterface:
                 type_connexion.append("4/5G")
             
             nombre_tpe = getattr(tpe, 'nombre_tpe', 1)
-            
-            # Récupérer les cartes (avec compatibilité)
-            cartes_str = ""
-            if hasattr(tpe, 'cartes_commercant') and tpe.cartes_commercant:
-                if isinstance(tpe.cartes_commercant[0], CarteCommercant):
-                    # Nouvelle version
-                    cartes_str = ", ".join([c.numero for c in tpe.cartes_commercant[:2]])
-                    if len(tpe.cartes_commercant) > 2:
-                        cartes_str += "..."
-                else:
-                    # Ancienne version (strings)
-                    cartes_str = ", ".join([str(c) for c in tpe.cartes_commercant[:2]])
-                    if len(tpe.cartes_commercant) > 2:
-                        cartes_str += "..."
+            cartes_str = self._get_cartes_str(tpe)
             
             self.tree.insert('', tk.END, values=(
                 tpe.shop_id,
@@ -951,16 +1021,20 @@ class TPEInterface:
         if fichier:
             if self.gestionnaire.exporter_excel(fichier):
                 messagebox.showinfo("Succès", f"Export Excel réussi !\nFichier: {fichier}")
+                self.set_status(f"✅ Export Excel réussi : {fichier}")
             else:
                 messagebox.showerror("Erreur", "Erreur lors de l'export Excel")
+                self.set_status(f"❌ Erreur lors de l'export Excel", duree=7000)
     
     def sauvegarder(self):
         """Sauvegarde les données"""
         if self.gestionnaire.sauvegarder():
             self.gestionnaire.backup_json()
             messagebox.showinfo("Succès", "Sauvegarde réussie !")
+            self.set_status("✅ Sauvegarde effectuée avec succès")
         else:
             messagebox.showerror("Erreur", "Erreur lors de la sauvegarde")
+            self.set_status("❌ Erreur lors de la sauvegarde", duree=7000)
     
     def sauvegarder_auto(self):
         """Sauvegarde automatique après chaque action"""
@@ -1016,19 +1090,8 @@ Accès Backoffice actifs: {stats['backoffice_actifs']}
         )
         if reponse:
             self.auth_manager.deconnecter()
-            messagebox.showinfo("Déconnexion", "Vous avez été déconnecté")
-            self.root.destroy()
-            # Relancer l'écran de connexion
-            import login_gui
-            root = tk.Tk()
-            login_gui.LoginWindow(root, lambda auth: self.relancer_app(auth))
-            root.mainloop()
-    
-    def relancer_app(self, auth_manager):
-        """Relance l'application après reconnexion"""
-        root = tk.Tk()
-        app = TPEInterface(root, auth_manager)
-        root.mainloop()
+            self._demande_reconnexion = True
+            self.root.quit()
     
     def changer_password(self):
         """Fenêtre de changement de mot de passe"""
@@ -1277,19 +1340,32 @@ Développé avec Python & Tkinter
 
 
 def main():
-    """Fonction principale avec authentification"""
+    """Fonction principale avec authentification - boucle propre"""
     import login_gui
     
-    def lancer_application(auth_manager):
-        """Lance l'application principale après connexion"""
+    while True:
         root = tk.Tk()
-        app = TPEInterface(root, auth_manager)
+        auth_holder = [None]
+        
+        def lancer_application(auth_manager):
+            auth_holder[0] = auth_manager
+            root.quit()
+        
+        login_gui.LoginWindow(root, lancer_application)
         root.mainloop()
-    
-    # Lancer l'écran de connexion
-    root = tk.Tk()
-    login_gui.LoginWindow(root, lancer_application)
-    root.mainloop()
+        root.destroy()
+        
+        if auth_holder[0] is None:
+            break
+        
+        app_root = tk.Tk()
+        app = TPEInterface(app_root, auth_holder[0])
+        app_root.mainloop()
+        app_root.destroy()
+        
+        # Si on arrive ici, l'utilisateur s'est déconnecté → recommencer la boucle
+        if not hasattr(app, '_demande_reconnexion') or not app._demande_reconnexion:
+            break
 
 
 if __name__ == "__main__":

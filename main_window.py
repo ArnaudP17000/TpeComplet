@@ -1,4 +1,10 @@
 """
+⚠️ FICHIER OBSOLÈTE - NE PAS UTILISER
+Ce fichier est une ancienne version de l'interface, remplacée par tpe_gui.py (v1.5).
+Il sera supprimé lors d'un prochain nettoyage.
+"""
+
+"""
 Interface Graphique pour la Gestion des Terminaux de Paiement Électronique (T.P.E.)
 Utilise Tkinter pour l'interface utilisateur
 Version 1.1 - Ajout du champ "Nombre de TPE"
