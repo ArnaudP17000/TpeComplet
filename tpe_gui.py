@@ -64,6 +64,9 @@ class TPEInterface:
         # Liste pour stocker les champs de cartes (avec numéro de série)
         self.cartes_entries = []
         
+        # Flag pour gérer la reconnexion
+        self._demande_reconnexion = False
+        
         # Configuration du style
         self.configurer_style()
         
@@ -319,7 +322,7 @@ class TPEInterface:
     def filtrer_tpe_liste(self, *args):
         """Filtre la liste par type de TPE (Move/Desk) et recherche textuelle multi-champs"""
         filtre = self.filtre_var.get()
-        recherche = self.search_var.get().strip().lower() if hasattr(self, 'search_var') else ''
+        recherche = self.search_var.get().strip().lower()
         
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -1364,7 +1367,7 @@ def main():
         app_root.destroy()
         
         # Si on arrive ici, l'utilisateur s'est déconnecté → recommencer la boucle
-        if not hasattr(app, '_demande_reconnexion') or not app._demande_reconnexion:
+        if not app._demande_reconnexion:
             break
 
 
